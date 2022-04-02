@@ -260,21 +260,20 @@ def init_app():
     window = Window()
     app._chainprox_main_window = window
 
-    loop = quamash.QEventLoop(app)
-    asyncio.set_event_loop(loop)
-    asyncio.events._set_running_loop(loop)
+    event_loop = quamash.QEventLoop(app)
+    asyncio.set_event_loop(event_loop)
+    asyncio.events._set_running_loop(event_loop)
 
     user = window.router.db_manager.last_user()
 
-    with loop:
+    with event_loop:
         if user:
             window.start_manager(user.email, user.password)
         else:
             window.load_login_page()
             window.show()
 
-        loop.run_forever()
-
+        event_loop.run_forever()
 
 if __name__ == '__main__':
     app = init_app()
