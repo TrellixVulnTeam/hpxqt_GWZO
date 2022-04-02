@@ -10,7 +10,7 @@ from PyQt5 import QtGui, QtCore, QtWebChannel, QtWebEngineWidgets, QtWidgets
 from PyQt5.QtWidgets import QApplication
 
 
-#from hpxclient import utils as hpxclient_utils
+from hpxclient import daemon as hpxclient_daemon
 from hpxqt import consts as hpxqt_consts
 from hpxqt import db as hpxqt_db
 from hpxqt import mng as hpxqt_mng
@@ -19,6 +19,7 @@ from hpxqt import utils as hpxqt_utils
 
 # Required for QtGui.QPixmap to work
 from hpxqt import hpximg
+
 
 class Router(QtCore.QObject):
     init_close = QtCore.pyqtSignal()
@@ -246,7 +247,7 @@ async def process_events(qapp):
 
 
 def init_app():
-    #hpxclient_utils.load_config()
+    hpxclient_daemon.load_config()
 
     app = QtWidgets.QApplication(sys.argv)
     app.setQuitOnLastWindowClosed(False)
@@ -261,6 +262,7 @@ def init_app():
 
     loop = quamash.QEventLoop(app)
     asyncio.set_event_loop(loop)
+    asyncio.events._set_running_loop(loop)
 
     user = window.router.db_manager.last_user()
 
