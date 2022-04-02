@@ -11,12 +11,14 @@ from PyQt5.QtWidgets import QApplication
 from hpxclient import settings as hpxclient_settings
 from hpxqt import consts as hpxqt_consts
 
-SATOSHI_WEIGHT = 100000000
 
+def bytes2str(size):
+    for x in ['bytes', 'KB', 'MB', 'GB', 'TB']:
+        if size < 1024.0:
+            return "%3.1f %s" % (size, x)
+        size /= 1024.0
 
-def satoshi2bst(amount):
-    return Decimal(str(amount)) / SATOSHI_WEIGHT
-
+    return size
 
 def get_os():
     _os = platform.system().lower()

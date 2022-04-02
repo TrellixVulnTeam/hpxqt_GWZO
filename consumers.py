@@ -19,6 +19,7 @@ class AuthResponseConsumer(Consumer):
 
     def process(self, msg):
         error = msg[b"error"]
+
         if error:
             self.window.show()
             self.window.show_error(error_msg=error.decode())
@@ -35,8 +36,8 @@ class InfoBalanceConsumer(Consumer):
     KIND = mng_consumers.InfoBalanceConsumer.KIND
 
     def process(self, msg):
-        balance_amount = hpxqt_utils.satoshi2bst(msg[b"balance_amount"])
-        self.window.label_balance.setText("Balance: %s BST" % balance_amount)
+        balance_amount = hpxqt_utils.bytes2str(msg[b"balance_amount"])
+        self.window.label_balance.setText("Balance: %s" % balance_amount)
 
 
 class InfoVersionConsumer(Consumer):
