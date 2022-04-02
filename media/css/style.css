@@ -1,0 +1,397 @@
+@font-face {
+    font-family: Montserrat-Bold;
+    src: url(assets/css/88932dadc42e1bba93b21a76de60ef7a.ttf);
+    font-weight: 700;
+    font-style: normal
+}
+
+@font-face {
+    font-family: Montserrat-Italic;
+    src: url(assets/css/6786546363c0261228fd66d68bbf27e9.ttf);
+    font-weight: 400;
+    font-style: normal
+}
+
+@font-face {
+    font-family: Montserrat-Light;
+    src: url(assets/css/100b38fa184634fc89bd07a84453992c.ttf);
+    font-weight: 300;
+    font-style: normal
+}
+
+@font-face {
+    font-family: Montserrat-Regular;
+    src: url(assets/css/9c46095118380d38f12e67c916b427f9.ttf);
+    font-weight: 400;
+    font-style: normal
+}
+
+html {
+    box-sizing: border-box;
+    -webkit-font-smoothing: antialiased;
+    -moz-osx-font-smoothing: grayscale
+}
+
+body {
+    margin: 0
+}
+
+@media (min-width: 320px) and (max-width: 768px) {
+    body.main__29CYv {
+        position: fixed;
+        height: 100vh;
+        overflow: hidden
+    }
+}
+
+*, :after, :before {
+    box-sizing: inherit;
+    -webkit-font-smoothing: inherit;
+    -moz-osx-font-smoothing: grayscale
+}
+
+a {
+    text-decoration: none
+}
+
+h1, h2, h3, h4, h5, hr {
+    margin: 0
+}
+
+input {
+    border:0;
+    border-color:transparent
+}
+
+input, select {
+    -moz-appearance: none;
+    -webkit-appearance:none;
+}
+
+select {
+    border: none;
+    background: #fff;
+    color: #8d9fc4;
+    font-family: Montserrat-Light
+}
+
+button {
+    user-select: none
+}
+
+button:active, button:hover {
+    opacity: .75;
+    cursor: pointer
+}
+
+@media (min-width: 320px) and (max-width: 768px) {
+    .header-menu__2CJRy {
+        top: 16px;
+        left: 16px
+    }
+}
+.button {
+    font-size: 12px;
+    height: 36px;
+    padding: 0 16px;
+    border: none;
+    border-radius: 24px;
+    cursor: pointer;
+    font-family: Montserrat-Bold;
+    transition: all .2s ease
+}
+
+.button:disabled {
+    opacity: .4;
+    cursor: default
+}
+
+.button2 {
+    background: #00e1bb;
+    color: #fff;
+    box-shadow: 0 0 15px 0 rgba(0, 225, 187, .3)
+}
+
+
+.field {
+    box-sizing: border-box;
+    width: 100%;
+    font-size: 16px;
+    color: #1b3466;
+    padding: 10px 0; /* border-bottom:1px solid #bbc4d5; *//* background-color:#fff; */
+    margin-bottom: 30px;
+    font-family: Montserrat-Regular;
+}
+
+.field:focus {
+    outline: none
+}
+
+.field:focus + .field2 {
+    top: -6px;
+    font-size: 12px
+}
+
+.field:invalid {
+    border-bottom: 1px solid #bbc4d5;
+    box-shadow: none
+}
+
+.field:disabled {
+    border: none
+}
+
+.field.field__5z00q + .field2 {
+    top: -6px;
+    font-size: 12px
+}
+
+.field2 {
+    color: #8d9fc4;
+    font-size: 16px;
+    pointer-events: none;
+    left: 0;
+    top: 10px;
+    -webkit-transition: all .2s ease;
+    transition: all .2s ease
+}
+
+.field2, .field3 {
+    font-family: Montserrat-Regular;
+    position: absolute
+}
+
+.field3 {
+    font-size: 12px;
+    top: 45.5px;
+    right: 0;
+    display: inline-block;
+    color: #ff5763
+}
+
+@media (min-width: 768px) and (max-width: 1024px) {
+    .field3 {
+        right: auto;
+        left: 0
+    }
+}
+
+.form {
+    color: #1b3466
+}
+
+.form h2, .form p {
+    width: 300px
+}
+
+.form h2 {
+    font-size: 30px;
+    font-family: Montserrat-Bold
+}
+
+.form p {
+    font-size: 16px;
+    font-family: Montserrat-Regular;
+    margin-bottom: 42px
+}
+
+.form > div {
+    display: flex;
+    flex-direction: row;
+    justify-content: space-between;
+    align-items: center
+}
+
+.form > div a {
+    font-size: 12px;
+    font-family: Montserrat-Bold;
+    color: #4ca1ff;
+    display: block
+}
+
+@media (min-width: 320px) and (max-width: 768px) {
+    .form h2 {
+        font-size: 24px
+    }
+
+    .form p {
+        font-size: 16px
+    }
+}
+
+
+.form2 {
+    position: relative
+}
+
+
+
+.authentication {
+    display: flex;
+    justify-content: center;
+    height: 100%;
+    width: 583px;
+    -webkit-backdrop-filter: blur(10px);
+    backdrop-filter: blur(10px);
+    background-image: url(assets/imgs/d8900946300c7e9c12eab8f1a78813ba.svg), url(assets/imgs/30520d780c02e6b5bd18bf3c47b1b644.svg), linear-gradient(209deg, #10347f, #3984d7);
+    background-position: -500px 0, 120px 290px, 50%;
+    background-repeat: no-repeat;
+    padding-top: 34px
+}
+
+.authentication .authentication__3r9KA {
+    width: 274px;
+    text-align: left;
+    color: #fff;
+    font-family: Montserrat-Light
+}
+
+.authentication h1 {
+    font-size: 48px;
+    font-weight: 300;
+    margin-bottom: 37px
+}
+
+.authentication p {
+    font-size: 18px;
+    font-weight: 100
+}
+
+.authentication {
+    height: 70px;
+    width: 100%;
+    padding-top: 0px
+}
+
+.authentication h1 {
+    margin-top: 10px;
+    font-size: 24px
+}
+
+.authentication p {
+    display: none
+}
+
+.authentication .authentication__3r9KA {
+    width: 100%;
+    padding: 0 16px
+}
+
+.authentication2 {
+    position: relative;
+    display: flex;
+    align-items: center;
+    justify-content: center;
+    flex-grow: 1
+}
+
+.authentication2 form {
+    margin-top: -100px
+}
+
+.authentication2 .authentication__1l9vd {
+    position: absolute;
+    top: 49px;
+    right: 40px;
+    display: flex;
+    flex-direction: row;
+    align-items: center
+}
+
+.authentication2 .authentication__1l9vd > span {
+    font-family: Montserrat-Regular;
+    font-size: 14px;
+    color: #8d9fc4;
+    margin-right: 12px
+}
+
+.authentication2 .authentication__16zIZ {
+    color: #1b3466;
+    width: 452px;
+    max-width: 80%
+}
+
+.authentication2 .authentication__16zIZ h2 {
+    font-family: Montserrat-Light;
+    font-size: 30px;
+    margin-bottom: 18px
+}
+
+.authentication2 .authentication__16zIZ h2 span {
+    font-family: Montserrat-Bold
+}
+
+.authentication2 .authentication__16zIZ p {
+    font-family: Montserrat-Regular;
+    font-size: 16px;
+    margin-bottom: 44px
+}
+
+.authentication2 .authentication__2nIgG {
+    display: block;
+    margin-top: 37px;
+    font-size: 12px;
+    font-family: Montserrat-Regular;
+    color: #8d9fc4;
+    line-height: 1.5
+}
+
+.authentication2 .authentication__2nIgG a {
+    font-family: Montserrat-Regular;
+    display: inline-block;
+    color: #3bb3ff
+}
+
+@media (min-width: 768px) and (max-width: 1024px) {
+    .authentication2 {
+        padding-top: 81px;
+        padding-bottom: 101px;
+        justify-content: center
+    }
+
+    .authentication2 .authentication__1l9vd {
+        top: 40px;
+        right: 24px
+    }
+
+    .authentication2 .authentication__16zIZ, .authentication2 form {
+        width: 510px
+    }
+
+    .authentication2 form {
+        margin-top: auto
+    }
+
+    .authentication2 form input {
+        width: 346px
+    }
+}
+
+@media (min-width: 320px) and (max-width: 768px) {
+    .authentication2 {
+        padding-top: 40px;
+        padding-bottom: 127px;
+        justify-content: center
+    }
+
+    .authentication2 .authentication__1l9vd {
+        top: auto;
+        bottom: 45px;
+        right: 16px
+    }
+
+    .authentication2 .authentication__16zIZ, .authentication2 form {
+        width: 100%;
+        padding: 0 16px
+    }
+
+    .authentication2 form {
+        margin-top: auto
+    }
+
+    .authentication2 .authentication__16zIZ h2 {
+        font-size: 24px
+    }
+}
+
+

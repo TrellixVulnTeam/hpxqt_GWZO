@@ -1,0 +1,8 @@
+<RCC>
+  <qresource prefix="images">
+    <file>icon.png</file>
+    <file>chainprox-logo.svg</file>
+    <file>green-dashes.svg</file>
+    <file>blue-dashes.svg</file>
+  </qresource>
+</RCC>

@@ -1,0 +1,5 @@
+PyQt5==5.15.6
+PyQtWebEngine-Qt5>=5.15.2
+requests==2.18.4
+quamash==0.6.1
+pony==0.7.14
