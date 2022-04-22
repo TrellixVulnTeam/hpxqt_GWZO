@@ -10,8 +10,10 @@ from hpxqt import utils as hpxqt_utils
 
 
 class Consumer(object):
-    def __init__(self, window):
-        self.window = window
+    def __init__(self, login_window, system_tray, mng):
+        self.login_window = login_window
+        self.system_tray = system_tray
+        self.mng = mng
 
 
 class AuthResponseConsumer(Consumer):
@@ -21,15 +23,14 @@ class AuthResponseConsumer(Consumer):
         error = msg[b"error"]
 
         if error:
-            self.window.show()
-            self.window.show_error(error_msg=error.decode())
-            self.window.stop_manager()
-            self.window.router.db_manager.delete_user()
+            self.login_window.show()
+            self.login_window.show_error(error_msg=error.decode())
+
+            self.mng.stop_manager()
+            self.mng.delete_credentials()
         else:
-            self.window.signal_minimize_tray.emit()
-            self.window.router.db_manager.add_user(
-                email=self.window.email,
-                password=self.window.password)
+            self.mng.save_credentials()
+            self.login_window.signal_minimize_tray.emit()
 
 
 class InfoBalanceConsumer(Consumer):
@@ -37,14 +38,14 @@ class InfoBalanceConsumer(Consumer):
 
     def process(self, msg):
         balance_amount = hpxqt_utils.bytes2str(msg[b"balance_amount"])
-        self.window.label_balance.setText("Balance: %s" % balance_amount)
+        self.system_tray.label_balance.setText("Balance: %s" % balance_amount)
 
 
 class InfoVersionConsumer(Consumer):
     KIND = mng_consumers.InfoVersionConsumer.KIND
 
-    def __init__(self, window):
-        super().__init__(window)
+    def __init__(self, login_window, system_tray, mng):
+        super().__init__(login_window, system_tray, mng)
 
         self._OS = hpxqt_utils.get_os()
         self._ARCH = hpxqt_consts.ARCH_MAP.get(platform.architecture()[0], '')
@@ -59,7 +60,7 @@ class InfoVersionConsumer(Consumer):
 
             if b_platform != hpxqt_consts.MAC_OS and (self._ARCH not in b_arch):
                     continue
-            return self.window.router.db_manager.add_update(binary['version'],
+            return self.login_window.router.db_manager.add_update(binary['version'],
                                                             binary['file'],
                                                             self._OS)
 
@@ -68,7 +69,7 @@ class InfoVersionConsumer(Consumer):
         if version == msg['version']:
             return
         
-        update_ver = self.window.router.db_manager.get_update(msg["version"])
+        update_ver = self.login_window.router.db_manager.get_update(msg["version"])
         if not update_ver:
             update_ver = self._save_new_version(msg['binaries'])
             if not update_ver:
@@ -77,7 +78,7 @@ class InfoVersionConsumer(Consumer):
 
         if update_ver.is_installed:
             return
-        self.window.upgrade.setDisabled(False)
+        self.login_window.upgrade.setDisabled(False)
 
 
 REGISTERED_CONSUMERS = [
@@ -104,5 +105,8 @@ def process_message(msg):
     if consumer_cls is None:
         raise Exception('Kind not recognized %s' % consumer_kind)
 
-    window = hpxqt_utils.get_main_window()
-    return consumer_cls(window).process(msg[b'data'])
+    window = hpxqt_utils.get_login_window()
+    system_tray = hpxqt_utils.get_system_tray()
+    mng = hpxqt_utils.get_chainprox_manager()
+
+    return consumer_cls(window, system_tray, mng).process(msg[b'data'])

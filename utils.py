@@ -20,6 +20,7 @@ def bytes2str(size):
 
     return size
 
+
 def get_os():
     _os = platform.system().lower()
     if _os == 'darwin':
@@ -77,8 +78,16 @@ def get_db_file_path():
     return os.path.join(get_chainprox_dir_path(), 'db.sqlite3')
 
 
-def get_main_window():
-    return QApplication.instance()._chainprox_main_window
+def get_login_window():
+    return QApplication.instance()._chainprox_login_window
+
+
+def get_system_tray():
+    return QApplication.instance()._chainprox_system_tray
+
+
+def get_chainprox_manager():
+    return QApplication.instance()._chainprox_manager
 
 
 def convert_bytes(data):

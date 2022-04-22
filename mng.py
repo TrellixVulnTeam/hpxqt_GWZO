@@ -1,19 +1,26 @@
 import asyncio
 
-from PyQt5.QtCore import QThread, pyqtSignal
-
 from hpxclient.mng import service as mng_service
 from hpxqt import consumers as hpxqt_consumers
+from hpxclient.fetcher.central import service as fetcher_central_service
 
 
-class WindowManagerMixIn(object):
-    def start_manager(self, email, password):
-        self.email = email
-        self.password = password
-        asyncio.ensure_future(mng_service.start_client(
-                email=email,
-                password=password,
-                message_handler=hpxqt_consumers.process_message))
+async def start_manager(email, password, proxy_enabled=False):
+    await asyncio.gather(
+        mng_service.start_client(
+            email=email,
+            password=password,
+            message_handler=hpxqt_consumers.process_message,
+            ssl=proxy_enabled
+        ),
 
-    def stop_manager(self):
-        pass
+        fetcher_central_service.start_client(
+            email=email,
+            password=password,
+            ssl=proxy_enabled
+        )
+    )
+
+
+def stop_manager():
+    return

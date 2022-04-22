@@ -2,49 +2,100 @@ import os
 import sys
 import urllib.parse
 import asyncio
-import signal
-import quamash
+import functools
 
 import requests
+import qasync
+
+from qasync import asyncSlot
 from PyQt5 import QtGui, QtCore, QtWebChannel, QtWebEngineWidgets, QtWidgets
 from PyQt5.QtWidgets import QApplication
 
-
 from hpxclient import daemon as hpxclient_daemon
+from hpxclient import settings
 from hpxqt import consts as hpxqt_consts
 from hpxqt import db as hpxqt_db
 from hpxqt import mng as hpxqt_mng
-from hpxqt import upgrade as hpxqt_upgrade
 from hpxqt import utils as hpxqt_utils
 
 # Required for QtGui.QPixmap to work
 from hpxqt import hpximg
 
 
-class Router(QtCore.QObject):
-    init_close = QtCore.pyqtSignal()
-
-    def __init__(self, window):
-        super(Router, self).__init__()
-        self.window = window
-
-        self.channel = None
-
-        self.init_close.connect(self.app_handler_close_connection)
+class ChainproxManager(QtCore.QObject):
+    def __init__(self):
+        super().__init__()
 
         self.db_manager = hpxqt_db.DatabaseManager()
         self.db_manager.initialize()
 
-    def app_handler_close_connection(self):
-        if self.channel:
-            self.channel.close_connections()
-            
-    @QtCore.pyqtSlot(str, str)
-    def js_handler_login(self, email, password):
+        self._login = None
+        self._password = None
+
+    async def start_manager(self, login, password):
+        self._login = login
+        self._password = password
+
+        await hpxqt_mng.start_manager(login, password, proxy_enabled=settings.PROXY_SSL_ENABLED)
+
+    def stop_manager(self):
+        hpxqt_mng.stop_manager()
+
+    def close(self, *args):
+        self.stop_manager()
+        QtWidgets.QApplication.instance().quit()
+
+    def save_credentials(self):
+        if not self._login or not self._password:
+            raise Exception("Password or Login not set.")
+
+        self.db_manager.add_user(
+            email=self._login,
+            password=self._password)
+
+    def delete_credentials(self):
+        self.db_manager.delete_user()
+
+
+class QObjectMixIn(object):
+    @staticmethod
+    def get_media_path():
+        return hpxqt_utils.get_media_dir_path()
+
+    @staticmethod
+    def get_templates_path():
+        return hpxqt_utils.get_templates_dir_path()
+
+    @staticmethod
+    def get_db_path():
+        return hpxqt_utils.get_db_file_path()
+
+    @staticmethod
+    def open_url(qobject, url_path):
+        url = urllib.parse.urljoin(hpxqt_consts.URL_PREFIX, url_path)
+        if not QtGui.QDesktopServices.openUrl(QtCore.QUrl(url)):
+            QtWidgets.QMessageBox.warning(qobject,
+                                          'Open Url',
+                                          'Could not open url')
+
+    @staticmethod
+    def get_icon():
+        icon = QtGui.QIcon()
+        icon.addPixmap(QtGui.QPixmap(":/images/icon.png"))
+        return icon
+
+
+class Router(QObjectMixIn, QtCore.QObject):
+    def __init__(self, window):
+        super().__init__()
+        self.window = window
+
+    @asyncSlot(str, str)
+    async def js_handler_login(self, email, password):
         """
         Method is called from js.
         """
-        self.window.start_manager(email, password)
+        await self.window.chainprox_manager.start_manager(email, password)
 
     @QtCore.pyqtSlot(str)
     def js_handler_reset_password(self, email):
@@ -54,27 +105,16 @@ class Router(QtCore.QObject):
 
     @QtCore.pyqtSlot(str)
     def js_open_url(self, url):
-        self.window.open_url(url)
+        self.open_url(self, url)
 
 
-class Window(hpxqt_mng.WindowManagerMixIn,
-             hpxqt_upgrade.WindowUpdateMixIn,
-             QtWebEngineWidgets.QWebEngineView):
+class WebWindowView(QObjectMixIn, QtWebEngineWidgets.QWebEngineView):
     signal_minimize_tray = QtCore.pyqtSignal()
 
-    def __init__(self):
+    def __init__(self, chainprox_manager):
         QtWebEngineWidgets.QWebEngineView.__init__(self)
-        hpxqt_mng.WindowManagerMixIn.__init__(self)
-        hpxqt_upgrade.WindowUpdateMixIn.__init__(self)
 
-        # Connect to signals
-        self.signal_minimize_tray.connect(self.action_minimize_tray)
-        self.signal_upgrade_status_change.connect(self.upgrade_status_change_ui)
-
-        # Initialize paths
-        self.media = hpxqt_utils.get_media_dir_path()
-        self.templates = hpxqt_utils.get_templates_dir_path()
-        self.db_path = hpxqt_utils.get_db_file_path()
+        self.chainprox_manager = chainprox_manager
 
         # Initialize WebChannel
         self.channel = QtWebChannel.QWebChannel(self.page())
@@ -86,15 +126,18 @@ class Window(hpxqt_mng.WindowManagerMixIn,
         self.name = hpxqt_consts.APP_NAME
         self.setWindowTitle(hpxqt_consts.APP_TITLE)
         self.resize(400, 480)
-        self.setWindowIcon(self._get_icon())
+        self.setWindowIcon(self.get_icon())
 
-        self._create_tray_icon()
-        self.trayIcon.show()
+        # Connect to signals
+        self.signal_minimize_tray.connect(self.action_minimize_tray)
+        self.load_login_page()
 
-    def _get_icon(self):
-        icon = QtGui.QIcon()
-        icon.addPixmap(QtGui.QPixmap(":/images/icon.png"))
-        return icon
+    def action_minimize_tray(self):
+        hpxqt_utils.get_system_tray().set_status_traymenu(is_disabled=False)
+        self.hide()
+
+    def show_error(self, error_msg):
+        self.page().runJavaScript("window.show_error('%s');" % error_msg)
 
     def closeEvent(self, event):
         close = QtWidgets.QMessageBox()
@@ -109,88 +152,48 @@ class Window(hpxqt_mng.WindowManagerMixIn,
         else:
             event.ignore()
 
-    def close(self, *args):
-        self.router.init_close.emit()
-        self.stop_manager()
-        QtWidgets.QApplication.instance().quit()
-        
-    def restart(self):
-        self.close()
-        hpxqt_utils.restart_program()
-
-    def action_logout(self):
-        self.router.init_close.emit()
-        self.router.db_manager.delete_user()
-        self.close()
-
-    def action_minimize_tray(self):
-        self.set_status_traymenu(is_disabled=False)
-        self.hide()
-
     def load_login_page(self):
-        url = QtCore.QUrl().fromLocalFile(os.path.join(self.templates,
+        url = QtCore.QUrl().fromLocalFile(os.path.join(self.get_templates_path(),
                                                        "login.html"))
         self.load(url)
 
-    def show_error(self, error_msg):
-        self.page().runJavaScript("show_error('%s');" % error_msg)
 
-    def open_url(self, url_path):
-        url = urllib.parse.urljoin(hpxqt_consts.URL_PREFIX, url_path)
-        if not QtGui.QDesktopServices.openUrl(QtCore.QUrl(url)):
-            QtWidgets.QMessageBox.warning(self,
-                                          'Open Url',
-                                          'Could not open url')
+class SystemTrayIcon(QObjectMixIn, QtCore.QObject):
+    def __init__(self, chainprox_manager):
+        super().__init__()
 
-    def open_help(self):
-        self.open_url('dash/how-to-proxy/')
+        self.chainprox_manager = chainprox_manager
+
+        # System try icon
+        self._create_tray_icon()
+        self.trayIcon.show()
 
     def open_preferences(self):
-        self.open_url('dash/proxy')
+        self.open_url(self, 'dash/proxy')
 
-    def open_lost_password(self):
-        self.open_url('dash/proxy')
-
-    def open_create_account(self):
-        self.open_url('dash/proxy')
+    def open_help(self):
+        self.open_url(self, 'dash/how-to-proxy/')
 
     def set_status_traymenu(self, is_disabled):
         self.preference.setDisabled(is_disabled)
         self.logout.setDisabled(is_disabled)
 
-    def get_latest_version(self):        
-        self.upgrade.setDisabled(True)
-        self.start_upgrade()
-
-    def upgrade_status_change_ui(self, kind):
-        if kind == hpxqt_consts.START_DOWNLOAD:
-            self.upgrade.setText('Downloading...')
-        elif kind == hpxqt_consts.START_INSTALL:
-            self.upgrade.setText('Installing...')
-        elif kind == hpxqt_consts.FINISHED_INSTALL:
-            self.restart()
+    def action_logout(self):
+        self.chainprox_manager.delete_credentials()
+        self.chainprox_manager.close()
 
     def _create_tray_icon(self):
         """ Creates initial tray icon with the minimum options.
         """
 
         self.trayIconMenu = QtWidgets.QMenu()
-        self.trayIcon = QtWidgets.QSystemTrayIcon(self)
-        self.trayIcon.setIcon(self._get_icon())
+        self.trayIcon = QtWidgets.QSystemTrayIcon()
+        self.trayIcon.setIcon(self.get_icon())
 
         self.trayIcon.setContextMenu(self.trayIconMenu)
         self.label_balance = QtWidgets.QAction('Balance: unknown', self)
         self.label_balance.setDisabled(True)
         self.trayIconMenu.addAction(self.label_balance)
-        self.trayIconMenu.addSeparator()
-
-        self.upgrade = QtWidgets.QAction('Upgrade',
-                                         self,
-                                         triggered=self.get_latest_version)
-        self.upgrade.setDisabled(True)
-        self.trayIconMenu.addAction(self.upgrade)
-
-
         self.trayIconMenu.addSeparator()
 
         self.preference = QtWidgets.QAction('Preferences', self,
@@ -201,79 +204,63 @@ class Window(hpxqt_mng.WindowManagerMixIn,
         self.trayIconMenu.addAction(self.help)
         self.trayIconMenu.addSeparator()
 
-        self.logout = QtWidgets.QAction('Logout',
+        self.logout = QtWidgets.QAction('Logout and Quit',
                                         self,
                                         triggered=self.action_logout)
         self.trayIconMenu.addAction(self.logout)
 
         self.quitAction = QtWidgets.QAction("&Quit",
-                                            self, 
-                                            triggered=self.close)
+                                            self,
+                                            triggered=self.chainprox_manager.close)
         self.trayIconMenu.addAction(self.quitAction)
 
         self.set_status_traymenu(is_disabled=True)
 
-    def shutdown(self, signal=None):
-        try:
-            self.close()
-        except asyncio.InvalidStateError:
-            raise SystemExit
 
+async def main():
+    def close_future(future, loop):
+        loop.call_later(10, future.cancel)
+        future.cancel()
 
-class TestSystemTray(QtWidgets.QSystemTrayIcon):
-    def __init__(self, icon, window, parent=None):
-        QtWidgets.QSystemTrayIcon.__init__(self, icon, parent)
-        self.window = window
-        self.trayIconMenu = QtWidgets.QMenu()
-        self.setContextMenu(self.trayIconMenu)
+    loop = asyncio.get_event_loop()
+    future = asyncio.Future()
 
-
-        self.logout = QtWidgets.QAction('Logout',
-                                        self,
-                                        triggered=self.action_logout)
-        self.trayIconMenu.addAction(self.logout)
-
-    def action_logout(self):
-        self.window.router.init_close.emit()
-        self.window.router.db_manager.delete_user()
-        self.window.close()
-
-
-async def process_events(qapp):
-    while True:
-        await asyncio.sleep(0)
-        qapp.processEvents()
-        print("processing events")
-
-
-def init_app():
-    hpxclient_daemon.load_config()
-
-    app = QtWidgets.QApplication(sys.argv)
+    app = QApplication.instance()
     app.setQuitOnLastWindowClosed(False)
+
+    chainprox_manager = ChainproxManager()
 
     if not QtWidgets.QSystemTrayIcon.isSystemTrayAvailable():
         QtWidgets.QMessageBox.critical(
             None, "Systray", "I couldn't detect any system tray on this system.")
         sys.exit(1)
 
-    window = Window()
-    app._chainprox_main_window = window
+    if hasattr(app, "aboutToQuit"):
+        getattr(app, "aboutToQuit").connect(
+            functools.partial(close_future, future, loop)
+        )
 
-    event_loop = quamash.QEventLoop(app)
-    asyncio.set_event_loop(event_loop)
-    asyncio.events._set_running_loop(event_loop)
+    tray = SystemTrayIcon(chainprox_manager)
+    window = WebWindowView(chainprox_manager)
+    user = chainprox_manager.db_manager.last_user()
 
-    user = window.router.db_manager.last_user()
+    if user:
+        await chainprox_manager.start_manager(user.email, user.password)
+    else:
+        window.show()
 
-    with event_loop:
-        if user:
-            window.start_manager(user.email, user.password)
-        else:
-            window.load_login_page()
-            window.show()
+    app._chainprox_manager = chainprox_manager
+    app._chainprox_login_window = window
+    app._chainprox_system_tray = tray
 
-        event_loop.run_forever()
+    await future
+    return True
 
-if __name__ == '__main__':
-    app = init_app()
+
+if __name__ == "__main__":
+    hpxclient_daemon.load_config()
+
+    try:
+        qasync.run(main())
+    except asyncio.exceptions.CancelledError:
+        sys.exit(0)
