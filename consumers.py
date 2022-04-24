@@ -3,6 +3,7 @@ import platform
 from PyQt5.QtCore import pyqtSlot
 
 from hpxclient.fetcher.central import consumers as fetcher_central_consumers
+from hpxclient import consts as hpxclient_consts
 from hpxclient.mng import consumers as mng_consumers
 from hpxqt import __version__ as version
 from hpxqt import consts as hpxqt_consts
@@ -39,6 +40,13 @@ class InfoBalanceConsumer(Consumer):
     def process(self, msg):
         balance_amount = hpxqt_utils.bytes2str(msg[b"balance_amount"])
         self.system_tray.label_balance.setText("Balance: %s" % balance_amount)
+
+
+class PongConsumer(Consumer):
+    KIND = hpxclient_consts.PONG_KIND
+
+    def process(self, msg):
+        pass
 
 
 class InfoVersionConsumer(Consumer):
@@ -84,7 +92,8 @@ class InfoVersionConsumer(Consumer):
 REGISTERED_CONSUMERS = [
     AuthResponseConsumer,
     InfoBalanceConsumer,
-    InfoVersionConsumer
+    InfoVersionConsumer,
+    PongConsumer
 ]
 
 
@@ -103,7 +112,8 @@ def process_message(msg):
             break
 
     if consumer_cls is None:
-        raise Exception('Kind not recognized %s' % consumer_kind)
+        print('Kind not recognized %s' % consumer_kind)
+        return
 
     window = hpxqt_utils.get_login_window()
     system_tray = hpxqt_utils.get_system_tray()
